@@ -206,6 +206,7 @@ pub mod Fund {
         }
         fn update_receive_donation(ref self: ContractState, strks: u256) {
             let current_balance = self.get_current_goal_state();
+            // Get caller address
             let caller: ContractAddress = get_caller_address();
             // Read donor's existing total
             let prev_total = self.donator_totals.read(caller);
