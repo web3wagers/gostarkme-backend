@@ -248,9 +248,6 @@ pub mod Fund {
             let caller = get_caller_address();
             assert!(self.owner.read() == caller, "You are not the owner");
             assert(self.state.read() == FundStates::CLOSED, 'Fund not close goal yet.');
-            assert(
-                self.get_current_goal_state() >= self.get_goal(), 'Fund hasnt reached its goal yet'
-            );
 
             let valid_address = contract_address_const::<FundManagerConstants::VALID_ADDRESS_1>();
             let withdrawn_amount = (self.get_current_goal_state() * 95) / 100;
