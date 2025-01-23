@@ -88,6 +88,7 @@ pub mod Fund {
         reason: ByteArray,
         up_votes: u32,
         voters: LegacyMap::<ContractAddress, u32>,
+        donators: LegacyMap::<ContractAddress, u256>,
         goal: u256,
         state: u8,
         evidence_link: ByteArray,
@@ -205,6 +206,9 @@ pub mod Fund {
         }
         fn update_receive_donation(ref self: ContractState, strks: u256) {
             let current_balance = self.get_current_goal_state();
+            let caller: ContractAddress = get_caller_address();
+            let prev_total = self.donators.read(caller);
+            self.donators.write(caller, prev_total + strks);
             if current_balance >= self.goal.read() {
                 self.state.write(FundStates::CLOSED);
             }
@@ -213,7 +217,7 @@ pub mod Fund {
                     DonationReceived {
                         current_balance,
                         donated_strks: strks,
-                        donator_address: get_caller_address(),
+                        donator_address: caller,
                         fund_contract_address: get_contract_address(),
                     }
                 )
