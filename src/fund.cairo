@@ -88,6 +88,7 @@ pub mod Fund {
         reason: ByteArray,
         up_votes: u32,
         voters: LegacyMap::<ContractAddress, u32>,
+        donator_totals: LegacyMap::<ContractAddress, u256>, // Track total donations per address
         goal: u256,
         state: u8,
         evidence_link: ByteArray,
