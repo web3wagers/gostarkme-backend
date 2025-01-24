@@ -186,8 +186,8 @@ pub mod Fund {
             while i < self.total_donators.read() {
                 let donator = self.donation_list.read(i);
                 donators.append(donator);
+                i += 1;
             };
-
             donators
         }
         fn receive_vote(ref self: ContractState) {
