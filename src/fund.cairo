@@ -25,7 +25,7 @@ pub trait IFund<TContractState> {
     fn get_contact_handle(self: @TContractState) -> ByteArray;
     fn set_type(ref self: TContractState, fund_type: u8);
     fn get_type(self: @TContractState) -> u8;
-    fn get_single_donator_amount( self: @TContractState, donator: ContractAddress) -> u256;
+    fn get_single_donator_amount(self: @TContractState, donator: ContractAddress) -> u256;
 }
 
 #[starknet::contract]
@@ -307,7 +307,7 @@ pub mod Fund {
             return self.fund_type.read();
         }
 
-        fn get_single_donator_amount( self: @ContractState, donator: ContractAddress) -> u256 {
+        fn get_single_donator_amount(self: @ContractState, donator: ContractAddress) -> u256 {
             //if the donator address is not found in the map , it will return 0
             return self.donators.read(donator);
         }
