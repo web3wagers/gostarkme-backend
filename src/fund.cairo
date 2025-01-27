@@ -1,5 +1,12 @@
 use starknet::ContractAddress;
 
+#[derive(Drop, Serde, starknet::Store, Clone)]
+pub struct DonatorInfo {
+    pub donator_index: u256,
+    pub donator_address: ContractAddress,
+    pub donator_amount: u256
+}
+
 #[starknet::interface]
 pub trait IFund<TContractState> {
     fn get_id(self: @TContractState) -> u128;
@@ -9,6 +16,7 @@ pub trait IFund<TContractState> {
     fn get_name(self: @TContractState) -> ByteArray;
     fn set_reason(ref self: TContractState, reason: ByteArray);
     fn get_reason(self: @TContractState) -> ByteArray;
+    fn get_donators(self: @TContractState) -> Array<DonatorInfo>;
     fn receive_vote(ref self: TContractState);
     fn get_up_votes(self: @TContractState) -> u32;
     fn set_goal(ref self: TContractState, goal: u256);
@@ -32,6 +40,7 @@ pub mod Fund {
     // *************************************************************************
     //                            IMPORT
     // *************************************************************************
+    use super::DonatorInfo;
     use starknet::ContractAddress;
     use starknet::get_caller_address;
     use starknet::contract_address_const;
@@ -88,7 +97,9 @@ pub mod Fund {
         reason: ByteArray,
         up_votes: u32,
         voters: LegacyMap::<ContractAddress, u32>,
-        donators: LegacyMap::<ContractAddress, u256>,
+        donators: LegacyMap::<ContractAddress, DonatorInfo>,
+        total_donators: u256,
+        donation_list: LegacyMap::<u256, DonatorInfo>,
         goal: u256,
         state: u8,
         evidence_link: ByteArray,
@@ -169,6 +180,16 @@ pub mod Fund {
         fn get_reason(self: @ContractState) -> ByteArray {
             return self.reason.read();
         }
+        fn get_donators(self: @ContractState) -> Array<DonatorInfo> {
+            let mut donators = array![];
+            let mut i: u256 = 1;
+            while i < self.total_donators.read() {
+                let donator = self.donation_list.read(i);
+                donators.append(donator);
+                i += 1;
+            };
+            donators
+        }
         fn receive_vote(ref self: ContractState) {
             assert(self.voters.read(get_caller_address()) == 0, 'User already voted!');
             assert(
@@ -207,8 +228,22 @@ pub mod Fund {
         fn update_receive_donation(ref self: ContractState, strks: u256) {
             let current_balance = self.get_current_goal_state();
             let caller: ContractAddress = get_caller_address();
-            let prev_total = self.donators.read(caller);
-            self.donators.write(caller, prev_total + strks);
+            let mut donator = self.donators.read(caller);
+            let prev_donator_count = self.total_donators.read();
+
+            if donator.donator_amount == 0 {
+                let new_index = prev_donator_count + 1;
+                donator =
+                    DonatorInfo {
+                        donator_address: caller, donator_index: new_index, donator_amount: strks,
+                    };
+
+                self.total_donators.write(new_index);
+            } else {
+                donator.donator_amount += strks;
+            }
+            self.donators.write(caller, donator.clone());
+            self.donation_list.write(donator.donator_index, donator);
             if current_balance >= self.goal.read() {
                 self.state.write(FundStates::CLOSED);
             }
@@ -220,8 +255,9 @@ pub mod Fund {
                         donator_address: caller,
                         fund_contract_address: get_contract_address(),
                     }
-                )
+                );
         }
+
         fn get_current_goal_state(self: @ContractState) -> u256 {
             self.token_dispatcher().balance_of(get_contract_address())
         }
