@@ -344,8 +344,6 @@ pub mod Fund {
         }
 
         fn get_single_donator_by_address(self: @ContractState, donator: ContractAddress) ->  DonatorInfo {
-            //if the donator address is not found in the map , it will return 
-            // DonatorInfo { donator_index: 0, donator_address: 0x0, donator_amount: 0 }
             self.donators.read(donator)
         }
     }
