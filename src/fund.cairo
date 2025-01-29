@@ -25,6 +25,7 @@ pub trait IFund<TContractState> {
     fn get_contact_handle(self: @TContractState) -> ByteArray;
     fn set_type(ref self: TContractState, fund_type: u8);
     fn get_type(self: @TContractState) -> u8;
+    fn get_donation_amount(self: @TContractState, donator: ContractAddress) -> u256;
 }
 
 #[starknet::contract]
@@ -304,6 +305,9 @@ pub mod Fund {
         }
         fn get_type(self: @ContractState) -> u8 {
             return self.fund_type.read();
+        }
+        fn get_donation_amount(self: @ContractState, donator: ContractAddress) -> u256 {
+            return self.donators.read(donator);
         }
     }
     // *************************************************************************

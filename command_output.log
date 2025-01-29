@@ -1,0 +1,11 @@
+
+Command: shopt -s histappend
+Output:
+
+Exit Code: 0
+----
+Command: pwd
+Output:
+/home/jsolis/onlydust/gostarkme-backend
+Exit Code: 0
+----
