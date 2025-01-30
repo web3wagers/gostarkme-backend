@@ -906,3 +906,28 @@ fn test_multiple_rapid_donations() {
     };
     spy.assert_emitted(@expected_events);
 }
+
+#[test]
+#[fork("Mainnet")]
+fn test_get_single_donator_by_address() {
+    let contract_address = _setup_();
+    let dispatcher = IFundDispatcher { contract_address };
+
+    let donator_address = VALID_ADDRESS_1();
+
+    let donator_info = dispatcher.get_single_donator_by_address(donator_address);
+    assert(donator_info.donator_index == 0, 'Donator index should not exist');
+    assert(donator_info.donator_amount == 0, 'Donator amount should not exist');
+
+    let strks: u256 = 500 * ONE_E18;
+    start_cheat_caller_address(contract_address, OWNER());
+    dispatcher.update_receive_donation(strks);
+
+    let donator_info = dispatcher.get_single_donator_by_address(OWNER());
+    assert(donator_info.donator_index == 1, 'Donator index should exist');
+    assert(donator_info.donator_amount == strks, 'Donator amount should exist');
+
+    dispatcher.update_receive_donation(strks);
+    let donator_info = dispatcher.get_single_donator_by_address(OWNER());
+    assert(donator_info.donator_index == 1, 'Donator index should exist');
+}
