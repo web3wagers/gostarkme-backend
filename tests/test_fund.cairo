@@ -4,7 +4,6 @@
 use starknet::{ContractAddress, contract_address_const};
 use starknet::syscalls::call_contract_syscall;
 
-
 use snforge_std::{
     declare, ContractClassTrait, start_cheat_caller_address_global, start_cheat_caller_address,
     stop_cheat_caller_address, cheat_caller_address, CheatSpan, spy_events, EventSpyAssertionsTrait
