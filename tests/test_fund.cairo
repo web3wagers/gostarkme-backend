@@ -87,8 +87,6 @@ fn _setup_() -> ContractAddress {
 //                              TEST
 // ***************************************************************************************
 
-
-
 #[test]
 #[fork("Mainnet")]
 fn test_constructor() {
@@ -664,32 +662,6 @@ fn test_get_single_donator_by_address() {
 
 #[test]
 #[fork("Mainnet")]
-fn test_get_single_donator_by_address() {
-    let contract_address = _setup_();
-    let dispatcher = IFundDispatcher { contract_address };
-
-    let donator_address = VALID_ADDRESS_1();
-
-    let donator_info = dispatcher.get_single_donator_by_address(donator_address);
-    assert(donator_info.donator_index == 0, 'Donator index should not exist');
-    assert(donator_info.donator_amount == 0, 'Donator amount should not exist');
-
-    let strks: u256 = 500 * ONE_E18;
-    start_cheat_caller_address(contract_address, OWNER());
-    dispatcher.update_receive_donation(strks);
-
-    let donator_info = dispatcher.get_single_donator_by_address(OWNER());
-    assert(donator_info.donator_index == 1, 'Donator index should exist');
-    assert(donator_info.donator_amount == strks, 'Donator amount should exist');
-
-    dispatcher.update_receive_donation(strks);
-    let donator_info = dispatcher.get_single_donator_by_address(OWNER());
-    assert(donator_info.donator_index == 1, 'Donator index should exist');
-    assert(donator_info.donator_amount == (strks * 2), 'Donator amount should exist');
-}
-
-#[test]
-#[fork("Mainnet")]
 fn test_donator_registration_and_subsequent_donations() {
     let mut spy = spy_events();
     start_cheat_caller_address_global(OWNER());
@@ -709,7 +681,9 @@ fn test_donator_registration_and_subsequent_donations() {
     stop_cheat_caller_address(token_address);
 
     let initial_check = fund_contract.get_single_donator_by_address(OWNER());
-    assert(initial_check.donator_amount == INITIAL_DONATION().into(), 'Initial donation should be zero');
+    assert(
+        initial_check.donator_amount == INITIAL_DONATION().into(), 'Initial donation should be zero'
+    );
 
     start_cheat_caller_address(token_address, OWNER());
     token_dispatcher.transfer(contract_address, initial_donation);
@@ -719,7 +693,10 @@ fn test_donator_registration_and_subsequent_donations() {
     let after_initial_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(after_initial_donation.donator_amount == initial_donation, 'Initial donation not match');
     assert(fund_contract.get_state() == FundStates::CLOSED, 'should be donations');
-    assert(token_dispatcher.balance_of(contract_address) == initial_donation, 'invalid balance after initial');
+    assert(
+        token_dispatcher.balance_of(contract_address) == initial_donation,
+        'invalid balance after initial'
+    );
 
     // Subsequent donation
     let subsequent_donation: u256 = 30_u256 * ONE_E18;
@@ -739,34 +716,37 @@ fn test_donator_registration_and_subsequent_donations() {
 
     let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(final_recorded_donation.donator_amount == total_donation, 'Total donation mismatch');
-    assert(token_dispatcher.balance_of(contract_address) == total_donation, 'Invalid final balance');
-
-    spy.assert_emitted(
-        @array![
-            (
-                contract_address,
-                Fund::Event::DonationReceived(
-                    Fund::DonationReceived {
-                        current_balance: initial_donation,
-                        donated_strks: initial_donation,
-                        donator_address: OWNER(),
-                        fund_contract_address: contract_address,
-                    }
-                )
-            ),
-            (
-                contract_address,
-                Fund::Event::DonationReceived(
-                    Fund::DonationReceived {
-                        current_balance: total_donation,
-                        donated_strks: subsequent_donation,
-                        donator_address: OWNER(),
-                        fund_contract_address: contract_address,
-                    }
-                )
-            )
-        ]
+    assert(
+        token_dispatcher.balance_of(contract_address) == total_donation, 'Invalid final balance'
     );
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: initial_donation,
+                            donated_strks: initial_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                ),
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: total_donation,
+                            donated_strks: subsequent_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            ]
+        );
 }
 
 #[test]
@@ -801,21 +781,22 @@ fn test_donation_scenarios() {
     let updated_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(updated_donation.donator_amount == small_amount, 'Small donation mismatch');
     assert(token_dispatcher.balance_of(contract_address) == small_amount, 'Invalid balance');
-    spy.assert_emitted(
-        @array![
-            (
-                contract_address,
-                Fund::Event::DonationReceived(
-                    Fund::DonationReceived {
-                        current_balance: small_amount,
-                        donated_strks: small_amount,
-                        donator_address: OWNER(),
-                        fund_contract_address: contract_address,
-                    }
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount,
+                            donated_strks: small_amount,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
                 )
-            )
-        ]
-    );
+            ]
+        );
 
     // Scenario 2: Existing donator with large amount
     let initial_donation: u256 = 100_u256 * ONE_E18;
@@ -840,35 +821,42 @@ fn test_donation_scenarios() {
     fund_contract.update_receive_donation(large_donation);
 
     let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
-    assert(final_recorded_donation.donator_amount == total_donation + small_amount, 'Large donation mismatch');
-    assert(token_dispatcher.balance_of(contract_address) == total_donation + small_amount, 'Invalid balance');
-
-    spy.assert_emitted(
-        @array![
-            (
-                contract_address,
-                Fund::Event::DonationReceived(
-                    Fund::DonationReceived {
-                        current_balance: small_amount + initial_donation,
-                        donated_strks: initial_donation,
-                        donator_address: OWNER(),
-                        fund_contract_address: contract_address,
-                    }
-                )
-            ),
-            (
-                contract_address,
-                Fund::Event::DonationReceived(
-                    Fund::DonationReceived {
-                        current_balance: small_amount + total_donation,
-                        donated_strks: large_donation,
-                        donator_address: OWNER(),
-                        fund_contract_address: contract_address,
-                    }
-                )
-            )
-        ]
+    assert(
+        final_recorded_donation.donator_amount == total_donation + small_amount,
+        'Large donation mismatch'
     );
+    assert(
+        token_dispatcher.balance_of(contract_address) == total_donation + small_amount,
+        'Invalid balance'
+    );
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount + initial_donation,
+                            donated_strks: initial_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                ),
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount + total_donation,
+                            donated_strks: large_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            ]
+        );
 
     // Scenario 3: Multiple rapid donations
     let donation_amount: u256 = 10_u256 * ONE_E18;

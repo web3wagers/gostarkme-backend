@@ -346,11 +346,7 @@ pub mod Fund {
         fn get_type(self: @ContractState) -> u8 {
             return self.fund_type.read();
         }
-<<<<<<< HEAD
-     
-=======
 
->>>>>>> upstream/dev
         fn get_single_donator_by_address(
             self: @ContractState, donator: ContractAddress
         ) -> DonatorInfo {
