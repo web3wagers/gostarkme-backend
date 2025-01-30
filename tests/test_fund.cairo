@@ -625,7 +625,7 @@ fn test_set_type() {
 #[test]
 #[fork("Mainnet")]
 fn test_get_single_donator_by_address() {
-    let contract_address = setup();
+    let contract_address = _setup_();
     let dispatcher = IFundDispatcher { contract_address };
 
     let donator_address = VALID_ADDRESS_1();
