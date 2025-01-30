@@ -83,10 +83,6 @@ fn _setup_() -> ContractAddress {
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     contract_address
 }
-fn add_delay(seconds: u64) {
-    let current_timestamp = starknet::get_block_timestamp();
-    set_block_timestamp(current_timestamp + seconds);
-}
 // ***************************************************************************************
 //                              TEST
 // ***************************************************************************************
