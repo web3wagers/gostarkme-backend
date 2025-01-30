@@ -33,7 +33,9 @@ pub trait IFund<TContractState> {
     fn get_contact_handle(self: @TContractState) -> ByteArray;
     fn set_type(ref self: TContractState, fund_type: u8);
     fn get_type(self: @TContractState) -> u8;
-    fn get_single_donator_by_address(self: @TContractState, donator: ContractAddress) -> DonatorInfo;
+    fn get_single_donator_by_address(
+        self: @TContractState, donator: ContractAddress
+    ) -> DonatorInfo;
 }
 
 #[starknet::contract]
@@ -184,11 +186,13 @@ pub mod Fund {
         fn get_donators(self: @ContractState) -> Array<DonatorInfo> {
             let mut donators = array![];
             let mut i: u256 = 1;
-            while i < self.total_donators.read() {
-                let donator = self.donation_list.read(i);
-                donators.append(donator);
-                i += 1;
-            };
+            while i < self
+                .total_donators
+                .read() {
+                    let donator = self.donation_list.read(i);
+                    donators.append(donator);
+                    i += 1;
+                };
             donators
         }
         fn receive_vote(ref self: ContractState) {
@@ -343,7 +347,9 @@ pub mod Fund {
             return self.fund_type.read();
         }
 
-        fn get_single_donator_by_address(self: @ContractState, donator: ContractAddress) ->  DonatorInfo {
+        fn get_single_donator_by_address(
+            self: @ContractState, donator: ContractAddress
+        ) -> DonatorInfo {
             self.donators.read(donator)
         }
     }
