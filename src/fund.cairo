@@ -26,6 +26,9 @@ pub trait IFund<TContractState> {
     fn set_type(ref self: TContractState, fund_type: u8);
     fn get_type(self: @TContractState) -> u8;
     fn get_donation_amount(self: @TContractState, donator: ContractAddress) -> u256;
+    fn get_single_donator_by_address(
+        self: @TContractState, donator: ContractAddress
+    ) -> DonatorInfo;
 }
 
 #[starknet::contract]
