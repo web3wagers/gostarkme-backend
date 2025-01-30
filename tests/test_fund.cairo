@@ -46,6 +46,9 @@ fn REASON_2() -> ByteArray {
 fn GOAL() -> u256 {
     1000
 }
+fn INITIAL_DONATION() -> u256 {
+    0
+}
 fn EVIDENCE_LINK_1() -> ByteArray {
     "Lorem impsum, Lorem impsum, Lorem impsum, Lorem impsum, Lorem impsum, Lorem impsum, Lorem impsum, Lorem impsum"
 }
@@ -473,7 +476,13 @@ fn test_update_received_donation() {
     token_dispatcher.transfer(contract_address, strks);
     stop_cheat_caller_address(token_address);
 
+    let donation_before = dispatcher.get_single_donator_by_address(VALID_ADDRESS_1());
+    assert(donation_before.donator_amount == INITIAL_DONATION(), 'Donation should be 0');
+
     dispatcher.update_receive_donation(strks);
+
+    let donation_after = dispatcher.get_single_donator_by_address(VALID_ADDRESS_1());
+    assert(donation_after.donator_amount == strks, 'Map not updated correctly');
 
     let current_balance = dispatcher.get_current_goal_state();
 
@@ -497,6 +506,7 @@ fn test_update_received_donation() {
             ]
         );
 }
+
 
 #[test]
 #[fork("Mainnet")]
@@ -646,4 +656,259 @@ fn test_get_single_donator_by_address() {
     let donator_info = dispatcher.get_single_donator_by_address(OWNER());
     assert(donator_info.donator_index == 1, 'Donator index should exist');
     assert(donator_info.donator_amount == (strks * 2), 'Donator amount should exist');
+}
+
+#[test]
+#[fork("Mainnet")]
+fn test_donator_registration_and_subsequent_donations() {
+    let mut spy = spy_events();
+    start_cheat_caller_address_global(OWNER());
+    let contract_address = _setup_();
+    let fund_contract = IFundDispatcher { contract_address };
+    let token_address = contract_address_const::<StarknetConstants::STRK_TOKEN_ADDRESS>();
+    let token_dispatcher = IERC20Dispatcher { contract_address: token_address };
+    let minter_address = contract_address_const::<StarknetConstants::STRK_TOKEN_MINTER_ADDRESS>();
+
+    // Initial donation
+    let initial_donation: u256 = 100_u256 * ONE_E18;
+    start_cheat_caller_address(token_address, minter_address);
+    let mut calldata = array![];
+    calldata.append_serde(OWNER());
+    calldata.append_serde(initial_donation);
+    call_contract_syscall(token_address, selector!("permissioned_mint"), calldata.span()).unwrap();
+    stop_cheat_caller_address(token_address);
+
+    let initial_check = fund_contract.get_single_donator_by_address(OWNER());
+    assert(
+        initial_check.donator_amount == INITIAL_DONATION().into(), 'Initial donation should be zero'
+    );
+
+    start_cheat_caller_address(token_address, OWNER());
+    token_dispatcher.transfer(contract_address, initial_donation);
+    stop_cheat_caller_address(token_address);
+    fund_contract.update_receive_donation(initial_donation);
+
+    let after_initial_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(after_initial_donation.donator_amount == initial_donation, 'Initial donation not match');
+    assert(fund_contract.get_state() == FundStates::CLOSED, 'should be donations');
+    assert(
+        token_dispatcher.balance_of(contract_address) == initial_donation,
+        'invalid balance after initial'
+    );
+
+    // Subsequent donation
+    let subsequent_donation: u256 = 30_u256 * ONE_E18;
+    let total_donation: u256 = initial_donation + subsequent_donation;
+
+    start_cheat_caller_address(token_address, minter_address);
+    let mut calldata = array![];
+    calldata.append_serde(OWNER());
+    calldata.append_serde(subsequent_donation);
+    call_contract_syscall(token_address, selector!("permissioned_mint"), calldata.span()).unwrap();
+    stop_cheat_caller_address(token_address);
+
+    start_cheat_caller_address(token_address, OWNER());
+    token_dispatcher.transfer(contract_address, subsequent_donation);
+    stop_cheat_caller_address(token_address);
+    fund_contract.update_receive_donation(subsequent_donation);
+
+    let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(final_recorded_donation.donator_amount == total_donation, 'Total donation mismatch');
+    assert(
+        token_dispatcher.balance_of(contract_address) == total_donation, 'Invalid final balance'
+    );
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: initial_donation,
+                            donated_strks: initial_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                ),
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: total_donation,
+                            donated_strks: subsequent_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            ]
+        );
+}
+
+#[test]
+#[fork("Mainnet")]
+fn test_donation_scenarios() {
+    let mut spy = spy_events();
+    start_cheat_caller_address_global(OWNER());
+
+    let contract_address = _setup_();
+    let fund_contract = IFundDispatcher { contract_address };
+    let token_address = contract_address_const::<StarknetConstants::STRK_TOKEN_ADDRESS>();
+    let token_dispatcher = IERC20Dispatcher { contract_address: token_address };
+    let minter_address = contract_address_const::<StarknetConstants::STRK_TOKEN_MINTER_ADDRESS>();
+
+    // Scenario 1: New donator with small amount
+    let small_amount: u256 = 1_u256;
+    start_cheat_caller_address(token_address, minter_address);
+    let mut calldata = array![];
+    calldata.append_serde(OWNER());
+    calldata.append_serde(small_amount);
+    call_contract_syscall(token_address, selector!("permissioned_mint"), calldata.span()).unwrap();
+    stop_cheat_caller_address(token_address);
+
+    let initial_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(
+        initial_donation.donator_amount == INITIAL_DONATION(), 'Initial donation should be zero'
+    );
+    start_cheat_caller_address(token_address, OWNER());
+    token_dispatcher.transfer(contract_address, small_amount);
+    stop_cheat_caller_address(token_address);
+    fund_contract.update_receive_donation(small_amount);
+    let updated_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(updated_donation.donator_amount == small_amount, 'Small donation mismatch');
+    assert(token_dispatcher.balance_of(contract_address) == small_amount, 'Invalid balance');
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount,
+                            donated_strks: small_amount,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            ]
+        );
+
+    // Scenario 2: Existing donator with large amount
+    let initial_donation: u256 = 100_u256 * ONE_E18;
+    let large_donation: u256 = 1_000_000_u256 * ONE_E18;
+    let total_donation: u256 = initial_donation + large_donation;
+
+    start_cheat_caller_address(token_address, minter_address);
+    let mut calldata = array![];
+    calldata.append_serde(OWNER());
+    calldata.append_serde(total_donation);
+    call_contract_syscall(token_address, selector!("permissioned_mint"), calldata.span()).unwrap();
+    stop_cheat_caller_address(token_address);
+
+    start_cheat_caller_address(token_address, OWNER());
+    token_dispatcher.transfer(contract_address, initial_donation);
+    stop_cheat_caller_address(token_address);
+    fund_contract.update_receive_donation(initial_donation);
+
+    start_cheat_caller_address(token_address, OWNER());
+    token_dispatcher.transfer(contract_address, large_donation);
+    stop_cheat_caller_address(token_address);
+    fund_contract.update_receive_donation(large_donation);
+
+    let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(
+        final_recorded_donation.donator_amount == total_donation + small_amount,
+        'Large donation mismatch'
+    );
+    assert(
+        token_dispatcher.balance_of(contract_address) == total_donation + small_amount,
+        'Invalid balance'
+    );
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount + initial_donation,
+                            donated_strks: initial_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                ),
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: small_amount + total_donation,
+                            donated_strks: large_donation,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            ]
+        );
+
+    // Scenario 3: Multiple rapid donations
+    let donation_amount: u256 = 10_u256 * ONE_E18;
+    let num_donations: u32 = 5;
+    let rapid_total_donation: u256 = donation_amount * num_donations.into();
+
+    start_cheat_caller_address(token_address, minter_address);
+    let mut calldata = array![];
+    calldata.append_serde(OWNER());
+    calldata.append_serde(rapid_total_donation);
+    call_contract_syscall(token_address, selector!("permissioned_mint"), calldata.span()).unwrap();
+    stop_cheat_caller_address(token_address);
+
+    let mut current_balance: u256 = small_amount + total_donation;
+    start_cheat_caller_address(token_address, OWNER());
+    let mut i: u32 = 0;
+    loop {
+        if i >= num_donations {
+            break;
+        }
+        token_dispatcher.transfer(contract_address, donation_amount);
+        fund_contract.update_receive_donation(donation_amount);
+        current_balance += donation_amount;
+        i += 1;
+    };
+    stop_cheat_caller_address(token_address);
+
+    let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
+    assert(final_recorded_donation.donator_amount == current_balance, 'Rapid donations mismatch');
+    assert(token_dispatcher.balance_of(contract_address) == current_balance, 'Invalid balance');
+
+    let mut expected_events = array![];
+    let mut i: u32 = 0;
+    let mut cumulative_balance: u256 = small_amount + total_donation;
+    loop {
+        if i >= num_donations {
+            break;
+        }
+        cumulative_balance += donation_amount;
+        expected_events
+            .append(
+                (
+                    contract_address,
+                    Fund::Event::DonationReceived(
+                        Fund::DonationReceived {
+                            current_balance: cumulative_balance,
+                            donated_strks: donation_amount,
+                            donator_address: OWNER(),
+                            fund_contract_address: contract_address,
+                        }
+                    )
+                )
+            );
+        i += 1;
+    };
+    spy.assert_emitted(@expected_events);
 }
