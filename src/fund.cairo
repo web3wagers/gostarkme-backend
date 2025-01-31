@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 pub struct DonatorInfo {
     pub donator_index: u256,
     pub donator_address: ContractAddress,
-    pub donator_amount: u256
+    pub donator_amount: u256,
 }
 
 #[starknet::interface]
@@ -34,7 +34,7 @@ pub trait IFund<TContractState> {
     fn set_type(ref self: TContractState, fund_type: u8);
     fn get_type(self: @TContractState) -> u8;
     fn get_single_donator_by_address(
-        self: @TContractState, donator: ContractAddress
+        self: @TContractState, donator: ContractAddress,
     ) -> DonatorInfo;
 }
 
@@ -49,10 +49,10 @@ pub mod Fund {
     use starknet::contract_address_const;
     use starknet::get_contract_address;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use gostarkme::constants::{funds::{fund_constants::FundStates},};
-    use gostarkme::constants::{funds::{fund_constants::FundConstants},};
-    use gostarkme::constants::{fund_manager::{fund_manager_constants::FundManagerConstants},};
-    use gostarkme::constants::{starknet::{starknet_constants::StarknetConstants},};
+    use gostarkme::constants::{funds::{fund_constants::FundStates}};
+    use gostarkme::constants::{funds::{fund_constants::FundConstants}};
+    use gostarkme::constants::{fund_manager::{fund_manager_constants::FundManagerConstants}};
+    use gostarkme::constants::{starknet::{starknet_constants::StarknetConstants}};
 
     // *************************************************************************
     //                            EVENTS
@@ -70,7 +70,7 @@ pub mod Fund {
         #[key]
         pub owner_address: ContractAddress,
         pub fund_contract_address: ContractAddress,
-        pub withdrawn_amount: u256
+        pub withdrawn_amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -78,7 +78,7 @@ pub mod Fund {
         #[key]
         pub voter: ContractAddress,
         pub fund: ContractAddress,
-        pub votes: u32
+        pub votes: u32,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -159,7 +159,7 @@ pub mod Fund {
                 self.owner.read() == caller
                     || valid_address_1 == caller
                     || valid_address_2 == caller,
-                "You must be an owner or admin to perform this action"
+                "You must be an owner or admin to perform this action",
             );
             self.name.write(name);
         }
@@ -175,7 +175,7 @@ pub mod Fund {
                 self.owner.read() == caller
                     || valid_address_1 == caller
                     || valid_address_2 == caller,
-                "You must be an owner or admin to perform this action"
+                "You must be an owner or admin to perform this action",
             );
 
             self.reason.write(reason);
@@ -186,19 +186,17 @@ pub mod Fund {
         fn get_donators(self: @ContractState) -> Array<DonatorInfo> {
             let mut donators = array![];
             let mut i: u256 = 1;
-            while i < self
-                .total_donators
-                .read() {
-                    let donator = self.donation_list.read(i);
-                    donators.append(donator);
-                    i += 1;
-                };
+            while i < self.total_donators.read() {
+                let donator = self.donation_list.read(i);
+                donators.append(donator);
+                i += 1;
+            };
             donators
         }
         fn receive_vote(ref self: ContractState) {
             assert(self.voters.read(get_caller_address()) == 0, 'User already voted!');
             assert(
-                self.state.read() == FundStates::RECOLLECTING_VOTES, 'Fund not recollecting votes!'
+                self.state.read() == FundStates::RECOLLECTING_VOTES, 'Fund not recollecting votes!',
             );
             self.up_votes.write(self.up_votes.read() + 1);
             self.voters.write(get_caller_address(), self.up_votes.read());
@@ -211,8 +209,8 @@ pub mod Fund {
                     NewVoteReceived {
                         voter: get_caller_address(),
                         fund: get_contract_address(),
-                        votes: self.up_votes.read()
-                    }
+                        votes: self.up_votes.read(),
+                    },
                 );
         }
         fn get_up_votes(self: @ContractState) -> u32 {
@@ -223,7 +221,7 @@ pub mod Fund {
             let valid_address_1 = contract_address_const::<FundManagerConstants::VALID_ADDRESS_1>();
             let valid_address_2 = contract_address_const::<FundManagerConstants::VALID_ADDRESS_2>();
             assert!(
-                valid_address_1 == caller || valid_address_2 == caller, "Only Admins can set goal"
+                valid_address_1 == caller || valid_address_2 == caller, "Only Admins can set goal",
             );
             self.goal.write(goal);
         }
@@ -259,7 +257,7 @@ pub mod Fund {
                         donated_strks: strks,
                         donator_address: caller,
                         fund_contract_address: get_contract_address(),
-                    }
+                    },
                 );
         }
 
@@ -272,7 +270,7 @@ pub mod Fund {
             let valid_address_2 = contract_address_const::<FundManagerConstants::VALID_ADDRESS_2>();
             assert!(
                 valid_address_1 == caller || valid_address_2 == caller,
-                "Only Admins can change the fund state."
+                "Only Admins can change the fund state.",
             );
             self.state.write(state);
         }
@@ -306,8 +304,8 @@ pub mod Fund {
                     DonationWithdraw {
                         owner_address: self.get_owner(),
                         fund_contract_address: get_contract_address(),
-                        withdrawn_amount
-                    }
+                        withdrawn_amount,
+                    },
                 );
         }
         fn set_evidence_link(ref self: ContractState, evidence: ByteArray) {
@@ -326,7 +324,7 @@ pub mod Fund {
                 self.owner.read() == caller
                     || valid_address_1 == caller
                     || valid_address_2 == caller,
-                "You must be an owner or admin to perform this action"
+                "You must be an owner or admin to perform this action",
             );
             self.contact_handle.write(contact_handle);
         }
@@ -339,7 +337,7 @@ pub mod Fund {
             let valid_address_2 = contract_address_const::<FundManagerConstants::VALID_ADDRESS_2>();
             assert!(
                 valid_address_1 == caller || valid_address_2 == caller,
-                "Only Admins can change the fund type."
+                "Only Admins can change the fund type.",
             );
             self.fund_type.write(fund_type);
         }
@@ -348,7 +346,7 @@ pub mod Fund {
         }
 
         fn get_single_donator_by_address(
-            self: @ContractState, donator: ContractAddress
+            self: @ContractState, donator: ContractAddress,
         ) -> DonatorInfo {
             self.donators.read(donator)
         }
@@ -360,7 +358,7 @@ pub mod Fund {
     impl InternalImpl of InternalTrait {
         fn token_dispatcher(self: @ContractState) -> IERC20Dispatcher {
             IERC20Dispatcher {
-                contract_address: contract_address_const::<StarknetConstants::STRK_TOKEN_ADDRESS>()
+                contract_address: contract_address_const::<StarknetConstants::STRK_TOKEN_ADDRESS>(),
             }
         }
     }

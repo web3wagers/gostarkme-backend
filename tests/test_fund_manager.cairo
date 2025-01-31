@@ -7,7 +7,7 @@ use starknet::syscalls::deploy_syscall;
 
 use snforge_std::{
     ContractClass, declare, ContractClassTrait, start_cheat_caller_address_global, get_class_hash,
-    spy_events, EventSpyAssertionsTrait
+    spy_events, EventSpyAssertionsTrait,
 };
 
 use openzeppelin::utils::serde::SerializedAppend;
@@ -15,7 +15,7 @@ use openzeppelin::utils::serde::SerializedAppend;
 use gostarkme::fund_manager::IFundManagerDispatcher;
 use gostarkme::fund_manager::IFundManagerDispatcherTrait;
 use gostarkme::fund_manager::FundManager;
-use gostarkme::constants::{funds::{fund_constants::FundTypeConstants},};
+use gostarkme::constants::{funds::{fund_constants::FundTypeConstants}};
 
 fn ID() -> u128 {
     1
@@ -91,7 +91,7 @@ fn test_new_fund() {
     let fund_manager_contract = IFundManagerDispatcher { contract_address };
     fund_manager_contract
         .new_fund(
-            NAME(), GOAL(), EVIDENCE_LINK(), CONTACT_HANDLE(), REASON(), FundTypeConstants::PROJECT
+            NAME(), GOAL(), EVIDENCE_LINK(), CONTACT_HANDLE(), REASON(), FundTypeConstants::PROJECT,
         );
     let expected_fund_class_hash = get_class_hash(fund_manager_contract.get_fund(1));
     let current_id = fund_manager_contract.get_current_id();
@@ -112,7 +112,7 @@ fn test_new_fund_bad_goal() {
             EVIDENCE_LINK(),
             CONTACT_HANDLE(),
             REASON(),
-            FundTypeConstants::PROJECT
+            FundTypeConstants::PROJECT,
         );
 }
 
@@ -128,7 +128,7 @@ fn test_fund_deployed_event() {
     let current_id = fund_manager_contract.get_current_id();
     fund_manager_contract
         .new_fund(
-            NAME(), GOAL(), EVIDENCE_LINK(), CONTACT_HANDLE(), REASON(), FundTypeConstants::PROJECT
+            NAME(), GOAL(), EVIDENCE_LINK(), CONTACT_HANDLE(), REASON(), FundTypeConstants::PROJECT,
         );
 
     let expected_fund_class_hash = fund_manager_contract.get_fund(1);
@@ -143,10 +143,10 @@ fn test_fund_deployed_event() {
                             fund_address: expected_fund_class_hash,
                             fund_id: current_id,
                             owner: OWNER(),
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 }
 

@@ -13,7 +13,7 @@ use snforge_std::{
 use openzeppelin::utils::serde::SerializedAppend;
 
 use gostarkme::donator_manager::{
-    DonatorManager, IDonatorManagerDispatcher, IDonatorManagerDispatcherTrait
+    DonatorManager, IDonatorManagerDispatcher, IDonatorManagerDispatcherTrait,
 };
 
 fn OWNER() -> ContractAddress {
@@ -28,13 +28,13 @@ fn __setup__() -> (ContractAddress, ClassHash) {
     let (donator_contract_address, _) = donator.deploy(@donator_calldata).unwrap();
     let donator_class_hash = get_class_hash(donator_contract_address);
 
-    // Donator Manager 
+    // Donator Manager
     let donator_manager = declare("DonatorManager").unwrap();
     let mut donator_manager_calldata: Array<felt252> = array![];
     donator_manager_calldata.append_serde(donator_class_hash);
     let (contract_address, _) = donator_manager.deploy(@donator_manager_calldata).unwrap();
 
-    return (contract_address, donator_class_hash,);
+    return (contract_address, donator_class_hash);
 }
 
 // *************************************************************************
@@ -59,7 +59,7 @@ fn test_new_donator() {
     let donator_manager_contract = IDonatorManagerDispatcher { contract_address };
     donator_manager_contract.new_donator();
     let expected_donator_class_hash = get_class_hash(
-        donator_manager_contract.get_donator_by_address(OWNER())
+        donator_manager_contract.get_donator_by_address(OWNER()),
     );
     assert(expected_donator_class_hash == donator_class_hash, 'Invalid donator address');
 }
@@ -80,10 +80,10 @@ fn test_emit_event_donator_contract_deployed() {
                     DonatorManager::Event::DonatorContractDeployed(
                         DonatorManager::DonatorContractDeployed {
                             new_donator: donator_manager_contract.get_donator_by_address(OWNER()),
-                            owner: OWNER()
-                        }
-                    )
-                )
-            ]
+                            owner: OWNER(),
+                        },
+                    ),
+                ),
+            ],
         );
 }

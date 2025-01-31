@@ -6,7 +6,7 @@ use starknet::syscalls::call_contract_syscall;
 
 use snforge_std::{
     declare, ContractClassTrait, start_cheat_caller_address_global, start_cheat_caller_address,
-    stop_cheat_caller_address, cheat_caller_address, CheatSpan, spy_events, EventSpyAssertionsTrait
+    stop_cheat_caller_address, cheat_caller_address, CheatSpan, spy_events, EventSpyAssertionsTrait,
 };
 
 use openzeppelin::utils::serde::SerializedAppend;
@@ -16,10 +16,10 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use gostarkme::fund::Fund;
 use gostarkme::fund::IFundDispatcher;
 use gostarkme::fund::IFundDispatcherTrait;
-use gostarkme::constants::{fund_manager::{fund_manager_constants::FundManagerConstants},};
-use gostarkme::constants::{funds::{fund_constants::FundStates},};
-use gostarkme::constants::{funds::{fund_constants::FundTypeConstants},};
-use gostarkme::constants::{starknet::{starknet_constants::StarknetConstants},};
+use gostarkme::constants::{fund_manager::{fund_manager_constants::FundManagerConstants}};
+use gostarkme::constants::{funds::{fund_constants::FundStates}};
+use gostarkme::constants::{funds::{fund_constants::FundTypeConstants}};
+use gostarkme::constants::{starknet::{starknet_constants::StarknetConstants}};
 
 const ONE_E18: u256 = 1000000000000000000_u256;
 fn ID() -> u128 {
@@ -270,11 +270,11 @@ fn test_new_vote_received_event_emitted_successful() {
                     contract_address,
                     Fund::Event::NewVoteReceived(
                         Fund::NewVoteReceived {
-                            voter: OTHER_USER(), fund: contract_address, votes: 1
-                        }
-                    )
-                )
-            ]
+                            voter: OTHER_USER(), fund: contract_address, votes: 1,
+                        },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -292,7 +292,7 @@ fn test_set_reason_unauthorized() {
 fn test_withdraw_with_wrong_owner() {
     let contract_address = _setup_();
 
-    // call withdraw fn with wrong owner 
+    // call withdraw fn with wrong owner
     start_cheat_caller_address_global(OTHER_USER());
     IFundDispatcher { contract_address }.withdraw();
 }
@@ -370,11 +370,11 @@ fn test_withdraw() {
 
     assert(
         owner_balance_after == (owner_balance_before + withdrawn_amount),
-        'wrong owner balance after'
+        'wrong owner balance after',
     );
     assert(
         (fund_balance_before - (withdrawn_amount + fund_manager_amount)) == fund_balance_after,
-        'wrong fund balance'
+        'wrong fund balance',
     );
     assert(token_dispatcher.balance_of(VALID_ADDRESS_1()) == fund_manager_amount, 'wrong balance');
 }
@@ -500,10 +500,10 @@ fn test_update_received_donation() {
                             donated_strks: strks,
                             donator_address: VALID_ADDRESS_1(),
                             fund_contract_address: contract_address,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -563,11 +563,11 @@ fn test_emit_event_donation_withdraw() {
                         Fund::DonationWithdraw {
                             owner_address: OWNER(),
                             fund_contract_address: contract_address,
-                            withdrawn_amount
-                        }
-                    )
-                )
-            ]
+                            withdrawn_amount,
+                        },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -680,7 +680,8 @@ fn test_donator_registration_and_subsequent_donations() {
 
     let initial_check = fund_contract.get_single_donator_by_address(OWNER());
     assert(
-        initial_check.donator_amount == INITIAL_DONATION().into(), 'Initial donation should be zero'
+        initial_check.donator_amount == INITIAL_DONATION().into(),
+        'Initial donation should be zero',
     );
 
     start_cheat_caller_address(token_address, OWNER());
@@ -693,7 +694,7 @@ fn test_donator_registration_and_subsequent_donations() {
     assert(fund_contract.get_state() == FundStates::CLOSED, 'should be donations');
     assert(
         token_dispatcher.balance_of(contract_address) == initial_donation,
-        'invalid balance after initial'
+        'invalid balance after initial',
     );
 
     // Subsequent donation
@@ -715,7 +716,7 @@ fn test_donator_registration_and_subsequent_donations() {
     let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(final_recorded_donation.donator_amount == total_donation, 'Total donation mismatch');
     assert(
-        token_dispatcher.balance_of(contract_address) == total_donation, 'Invalid final balance'
+        token_dispatcher.balance_of(contract_address) == total_donation, 'Invalid final balance',
     );
 
     spy
@@ -729,8 +730,8 @@ fn test_donator_registration_and_subsequent_donations() {
                             donated_strks: initial_donation,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
+                        },
+                    ),
                 ),
                 (
                     contract_address,
@@ -740,10 +741,10 @@ fn test_donator_registration_and_subsequent_donations() {
                             donated_strks: subsequent_donation,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 }
 
@@ -770,7 +771,7 @@ fn test_donation_scenarios() {
 
     let initial_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(
-        initial_donation.donator_amount == INITIAL_DONATION(), 'Initial donation should be zero'
+        initial_donation.donator_amount == INITIAL_DONATION(), 'Initial donation should be zero',
     );
     start_cheat_caller_address(token_address, OWNER());
     token_dispatcher.transfer(contract_address, small_amount);
@@ -790,10 +791,10 @@ fn test_donation_scenarios() {
                             donated_strks: small_amount,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 
     // Scenario 2: Existing donator with large amount
@@ -821,11 +822,11 @@ fn test_donation_scenarios() {
     let final_recorded_donation = fund_contract.get_single_donator_by_address(OWNER());
     assert(
         final_recorded_donation.donator_amount == total_donation + small_amount,
-        'Large donation mismatch'
+        'Large donation mismatch',
     );
     assert(
         token_dispatcher.balance_of(contract_address) == total_donation + small_amount,
-        'Invalid balance'
+        'Invalid balance',
     );
 
     spy
@@ -839,8 +840,8 @@ fn test_donation_scenarios() {
                             donated_strks: initial_donation,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
+                        },
+                    ),
                 ),
                 (
                     contract_address,
@@ -850,10 +851,10 @@ fn test_donation_scenarios() {
                             donated_strks: large_donation,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
-                )
-            ]
+                        },
+                    ),
+                ),
+            ],
         );
 
     // Scenario 3: Multiple rapid donations
@@ -904,9 +905,9 @@ fn test_donation_scenarios() {
                             donated_strks: donation_amount,
                             donator_address: OWNER(),
                             fund_contract_address: contract_address,
-                        }
-                    )
-                )
+                        },
+                    ),
+                ),
             );
         i += 1;
     };

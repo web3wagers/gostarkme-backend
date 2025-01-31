@@ -52,7 +52,7 @@ pub mod DonatorManager {
     #[derive(Drop, starknet::Event)]
     pub struct DonatorContractDeployed {
         pub new_donator: ContractAddress,
-        pub owner: ContractAddress
+        pub owner: ContractAddress,
     }
 
     // *************************************************************************
@@ -65,15 +65,15 @@ pub mod DonatorManager {
             call_data.append(get_caller_address().try_into().unwrap());
 
             let (new_donator_address, _) = deploy_syscall(
-                self.donator_class_hash.read(), 12345, call_data.span(), false
+                self.donator_class_hash.read(), 12345, call_data.span(), false,
             )
                 .unwrap();
             self.donators.write(get_caller_address().try_into().unwrap(), new_donator_address);
             self
                 .emit(
                     DonatorContractDeployed {
-                        owner: get_caller_address(), new_donator: new_donator_address
-                    }
+                        owner: get_caller_address(), new_donator: new_donator_address,
+                    },
                 )
         }
         fn get_owner(self: @ContractState) -> ContractAddress {
