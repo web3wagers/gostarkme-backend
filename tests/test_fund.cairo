@@ -22,7 +22,6 @@ use gostarkme::constants::{funds::{fund_constants::FundTypeConstants}};
 use gostarkme::constants::{starknet::{starknet_constants::StarknetConstants}};
 
 const ONE_E18: u256 = 1000000000000000000_u256;
-
 fn ID() -> u128 {
     1
 }
