@@ -25,7 +25,7 @@ mod Donator {
         owner: ContractAddress,
         level: u32,
         total_stark_donations: u256,
-        max_stark_donations_to_next_level: u256,
+        max_stark_donations_to_next_level: u256
     }
 
     // *************************************************************************
